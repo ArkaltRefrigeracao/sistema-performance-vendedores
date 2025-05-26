@@ -1,0 +1,271 @@
+{% extends "base_performance.html" %}
+
+{% block title %}Configurar Quesitos de Desempenho{% endblock %}
+{% block page_title %}Configurar Quesitos de Desempenho{% endblock %}
+
+{% block content %}
+    <style>
+        /* Estilos específicos para esta página (sem alterações) */
+        .content-section {
+            padding: 20px;
+            background-color: var(--cor-fundo);
+            flex-grow: 1;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background-color: var(--cor-texto-claro);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--cor-secundaria);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select {
+            width: calc(100% - 22px); /* Ajusta para padding e border */
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+        }
+
+        .btn-primary:hover {
+            background-color: #162E45; /* Um tom mais escuro do azul primário */
+        }
+
+        .btn-danger {
+            background-color: #DC3545; /* Vermelho */
+            color: var(--cor-texto-claro);
+        }
+
+        .btn-danger:hover {
+            background-color: #C82333; /* Vermelho mais escuro */
+        }
+
+        .btn-warning {
+            background-color: #FFC107; /* Amarelo */
+            color: var(--cor-texto-escuro);
+        }
+
+        .btn-warning:hover {
+            background-color: #E0A800; /* Amarelo mais escuro */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th,
+        table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95em;
+        }
+
+        table th {
+            background-color: var(--cor-fundo);
+            color: var(--cor-secundaria);
+            font-weight: bold;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        table tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .table-actions {
+            white-space: nowrap; /* Evita que os botões quebrem linha */
+        }
+
+        /* Estilos do Modal (sem alterações) */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            align-items: center; /* Centraliza verticalmente */
+            justify-content: center; /* Centraliza horizontalmente */
+        }
+
+        .modal-content {
+            background-color: var(--cor-texto-claro);
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            animation: fadeInScale 0.3s ease-out;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--cor-primaria);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+
+    <script>
+        // *** CORRIGIDO ***
+        // A função agora apenas preenche os dados do modal. O ID do quesito é colocado em um campo oculto.
+        function openEditModal(id, nome, pontuacao_padrao, tipo) {
+            document.getElementById('edit_quesito_id').value = id;
+            document.getElementById('edit_nome').value = nome;
+            document.getElementById('edit_pontuacao_padrao').value = pontuacao_padrao;
+            document.getElementById('edit_tipo').value = tipo;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            var modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
+    <div class="content-section">
+        <h2>Adicionar Novo Quesito</h2>
+        <form method="POST" action="{{ url_for('performance_bp.config_performance') }}" class="card">
+            <div class="form-group">
+                <label for="nome">Nome do Quesito:</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            <div class="form-group">
+                <label for="pontuacao_padrao">Pontuação Padrão:</label>
+                <input type="number" id="pontuacao_padrao" name="pontuacao_padrao" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo:</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="positivo">Positivo (Soma)</option>
+                    <option value="negativo">Negativo (Subtrai)</option>
+                </select>
+            </div>
+            <button type="submit" name="add_quesito" value="true" class="btn btn-primary">Adicionar Quesito</button>
+        </form>
+
+        <h2>Quesitos Existentes</h2>
+        <div class="card">
+            {% if quesitos %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Pontuação Padrão</th>
+                        <th>Tipo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quesito in quesitos %}
+                    <tr>
+                        <td>{{ quesito.nome }}</td>
+                        <td>{{ quesito.pontuacao_padrao }}</td>
+                        <td>{{ quesito.tipo }}</td>
+                        <td class="table-actions">
+                            <button class="btn btn-warning" onclick="openEditModal('{{ quesito.id }}', '{{ quesito.nome }}', '{{ quesito.pontuacao_padrao }}', '{{ quesito.tipo }}')">Editar</button>
+                            
+                            <form action="{{ url_for('performance_bp.config_performance') }}" method="POST" style="display:inline-block;">
+                                <input type="hidden" name="quesito_id" value="{{ quesito.id }}">
+                                <button type="submit" name="delete_quesito" value="true" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir este quesito?')">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Nenhum quesito cadastrado ainda.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeEditModal()">&times;</span>
+            <h3>Editar Quesito</h3>
+            <form id="editForm" method="POST" action="{{ url_for('performance_bp.config_performance') }}">
+                <input type="hidden" id="edit_quesito_id" name="quesito_id">
+                <div class="form-group">
+                    <label for="edit_nome">Nome do Quesito:</label>
+                    <input type="text" id="edit_nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_pontuacao_padrao">Pontuação Padrão:</label>
+                    <input type="number" id="edit_pontuacao_padrao" name="pontuacao_padrao" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_tipo">Tipo:</label>
+                    <select id="edit_tipo" name="tipo" required>
+                        <option value="positivo">Positivo (Soma)</option>
+                        <option value="negativo">Negativo (Subtrai)</option>
+                    </select>
+                </div>
+                <button type="submit" name="edit_quesito" value="true" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

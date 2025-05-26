@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Desempenho</title>
+    <style>
+        :root {
+            --cor-primaria: #1A3A59; /* Azul escuro principal */
+            --cor-fundo: #F0F2F5; /* Fundo cinza claro */
+            --cor-texto-claro: #FFFFFF;
+            --cor-texto-escuro: #333333;
+            --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--cor-fundo);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column; /* Para centralizar o logo e o card */
+        }
+
+        .logo-login {
+            max-width: 150px; /* Ajuste conforme necessário */
+            margin-bottom: 20px;
+        }
+
+        .login-container {
+            background-color: var(--cor-texto-claro);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        h2 {
+            color: var(--cor-primaria);
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--cor-texto-escuro);
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: calc(100% - 20px); /* Padding interno */
+            padding: 12px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box; /* Garante que padding e borda não aumentem a largura total */
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="password"]:focus {
+            border-color: var(--cor-primaria);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 58, 89, 0.2);
+        }
+
+        .btn-login {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            font-weight: 700;
+        }
+
+        .btn-login:hover {
+            background-color: #152C40; /* Um pouco mais escuro */
+            transform: translateY(-2px);
+        }
+
+        .links-login {
+            margin-top: 25px;
+        }
+
+        .links-login p {
+            margin-bottom: 10px;
+            color: var(--cor-texto-escuro);
+        }
+
+        .links-login a {
+            color: var(--cor-primaria);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .links-login a:hover {
+            color: #152C40;
+            text-decoration: underline;
+        }
+
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .flash-messages li {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .flash-messages li.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .flash-messages li.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .flash-messages li.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+         @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='image_8435a9.png') }}" alt="Logo da Empresa" class="logo-login">
+
+    <div class="login-container">
+        <h2>Login</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('performance_bp.login_performance') }}" method="POST">
+            <div class="form-group">
+                <label for="nome">Usuário:</label>
+                <input type="text" id="nome" name="nome" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+            <button type="submit" class="btn-login">Entrar</button>
+        </form>
+        <div class="links-login">
+            <p>Não tem uma conta? <a href="{{ url_for('performance_bp.cadastro_vendedor_performance') }}">Cadastre-se aqui</a></p>
+        </div>
+    </div>
+</body>
+</html>

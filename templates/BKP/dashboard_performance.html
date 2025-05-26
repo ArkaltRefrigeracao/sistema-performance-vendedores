@@ -1,0 +1,402 @@
+{% extends "base_performance.html" %}
+
+{% block title %}Dashboard de Desempenho dos Vendedores{% endblock %}
+{% block page_title %}Dashboard de Desempenho dos Vendedores{% endblock %}
+
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <div class="content-section">
+        <div class="filter-section card">
+            <h3>Filtrar Dashboard</h3>
+            <div class="form-group">
+                <label for="mes_filtro">Mês:</label>
+                <select id="mes_filtro">
+                    <option value="1">Janeiro</option>
+                    <option value="2">Fevereiro</option>
+                    <option value="3">Março</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Maio</option>
+                    <option value="6">Junho</option>
+                    <option value="7">Julho</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ano_filtro">Ano:</label>
+                <select id="ano_filtro"></select> </div>
+            <div class="form-group">
+                <label for="vendedor_filtro">Vendedor:</label>
+                <select id="vendedor_filtro">
+                    <option value="">Todos</option>
+                    {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="fetchDashboardData()">Aplicar Filtro</button>
+            <button class="btn btn-secondary" onclick="exportToPdf()">Exportar para PDF</button>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card chart-card">
+                <h3>Pontuação Total por Vendedor</h3>
+                <canvas id="pontuacaoVendedoresChart"></canvas>
+                <div class="chart-legend">
+                    <p>Este gráfico mostra a pontuação total de cada vendedor no período selecionado.</p>
+                </div>
+            </div>
+            <div class="card chart-card">
+                <h3>Registros de Desempenho Detalhados</h3>
+                <div class="table-responsive">
+                    <table id="detalhesRegistrosTable">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Vendedor</th>
+                                <th>Quesito</th>
+                                <th>Pontuação</th>
+                                <th>Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+                <div class="chart-legend">
+                    <p>Tabela com todos os lançamentos de desempenho no período selecionado, filtrados por vendedor se aplicado.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Estilos específicos para esta página */
+        .content-section {
+            padding: 20px;
+            background-color: var(--cor-fundo);
+        }
+
+        .filter-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end; /* Alinha os itens na base */
+            margin-bottom: 30px;
+            padding: 25px;
+        }
+
+        .filter-section .form-group {
+            flex: 1; /* Permite que os campos se expandam */
+            min-width: 150px; /* Garante um tamanho mínimo para os campos */
+            margin-bottom: 0; /* Remove a margem inferior padrão de form-group */
+        }
+        .filter-section label {
+            font-weight: bold;
+            color: var(--cor-texto-escuro);
+            margin-bottom: 8px;
+            display: block;
+        }
+        .filter-section select,
+        .filter-section button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .filter-section button {
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .filter-section .btn-primary {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+        }
+        .filter-section .btn-primary:hover {
+            background-color: var(--cor-secundaria);
+            transform: translateY(-2px);
+        }
+        .filter-section .btn-secondary {
+            background-color: #6c757d;
+            color: var(--cor-texto-claro);
+        }
+        .filter-section .btn-secondary:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Uma coluna em telas pequenas */
+            gap: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); /* Duas colunas em telas maiores */
+            }
+        }
+
+        .chart-card {
+            background-color: var(--cor-texto-claro);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .chart-card h3 {
+            color: var(--cor-primaria);
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            border-bottom: 2px solid var(--cor-secundaria);
+            padding-bottom: 10px;
+            width: 100%;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto; /* Permite rolagem horizontal em tabelas grandes */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            white-space: nowrap; /* Evita que o texto quebre em várias linhas */
+        }
+
+        table th {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+            font-weight: bold;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        table tr:hover {
+            background-color: #e9e9e9;
+        }
+
+        .chart-legend {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+            width: 100%;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+        }
+        .pontuacao-positivo {
+            color: #28a745; /* Verde para pontuação positiva */
+            font-weight: bold;
+        }
+
+        .pontuacao-negativo {
+            color: #dc3545; /* Vermelho para pontuação negativa */
+            font-weight: bold;
+        }
+    </style>
+
+    <script>
+        let pontuacaoVendedoresChart; // Variável global para o gráfico
+
+        // Preenche o seletor de anos e define o mês/ano atual como padrão
+        window.onload = function() {
+            const anoFiltro = document.getElementById('ano_filtro');
+            const mesFiltro = document.getElementById('mes_filtro');
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth() + 1; // getMonth() é 0-indexed
+
+            for (let i = currentYear; i >= currentYear - 5; i--) { // Últimos 5 anos
+                let option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                anoFiltro.appendChild(option);
+            }
+
+            // Define o ano e mês atuais como selecionados
+            anoFiltro.value = currentYear;
+            mesFiltro.value = currentMonth;
+
+            fetchDashboardData(); // Carrega os dados iniciais ao carregar a página
+        };
+
+        async function fetchDashboardData() {
+            const mes = document.getElementById('mes_filtro').value;
+            const ano = document.getElementById('ano_filtro').value;
+            const vendedorId = document.getElementById('vendedor_filtro').value;
+
+            try {
+                const response = await fetch(`/performance/api/dashboard_performance_data?mes=${mes}&ano=${ano}&vendedor_id=${vendedorId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log("Dados recebidos:", data); // Para depuração
+
+                updatePontuacaoVendedoresChart(data.pontuacoes_por_vendedor);
+                updateDetalhesRegistrosTable(data.detalhes_registros);
+
+            } catch (error) {
+                console.error("Erro ao buscar dados do dashboard:", error);
+                alert("Erro ao carregar dados do dashboard. Verifique o console.");
+            }
+        }
+
+        function updatePontuacaoVendedoresChart(pontuacoes) {
+            const ctx = document.getElementById('pontuacaoVendedoresChart').getContext('2d');
+
+            const labels = pontuacoes.map(p => p.vendedor);
+            const data = pontuacoes.map(p => p.pontuacao);
+
+            // Cores para o gráfico de barras
+            const backgroundColors = data.map(p => p >= 0 ? 'rgba(75, 192, 192, 0.6)' : 'rgba(255, 99, 132, 0.6)');
+            const borderColors = data.map(p => p >= 0 ? 'rgba(75, 192, 192, 1)' : 'rgba(255, 99, 132, 1)');
+
+            if (pontuacaoVendedoresChart) {
+                pontuacaoVendedoresChart.destroy(); // Destrói o gráfico existente antes de criar um novo
+            }
+
+            pontuacaoVendedoresChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pontuação Total',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Pontuação'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Vendedor'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // Não exibir a legenda padrão
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' pontos';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDetalhesRegistrosTable(registros) {
+            const tableBody = document.getElementById('detalhesRegistrosTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // Limpa o corpo da tabela
+
+            if (registros.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhum registro encontrado para o período/filtro selecionado.</td></tr>';
+                return;
+            }
+
+            registros.forEach(registro => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = registro.data;
+                row.insertCell(1).textContent = registro.vendedor;
+                row.insertCell(2).textContent = registro.quesito;
+                
+                const pontuacaoCell = row.insertCell(3);
+                pontuacaoCell.textContent = registro.pontuacao;
+                pontuacaoCell.classList.add(registro.tipo === 'positivo' ? 'pontuacao-positivo' : 'pontuacao-negativo');
+
+                row.insertCell(4).textContent = registro.observacao || 'N/A';
+            });
+        }
+
+        async function exportToPdf() {
+            const { jsPDF } = window.jspdf;
+            
+            try {
+                // Temporariamente ajuste a largura para garantir que o html2canvas capture bem
+                const content = document.querySelector('.content-section');
+                const originalWidth = content.style.width;
+                content.style.width = 'fit-content'; // Ajusta a largura para o conteúdo para evitar cortes
+
+                const canvas = await html2canvas(content, {
+                    scale: 2, // Aumenta a escala para melhor qualidade de imagem
+                    useCORS: true // Importante se você tiver imagens ou fontes de origens diferentes
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' para retrato, 'mm' para milímetros, 'a4' para tamanho A4
+
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                const mes = document.getElementById('mes_filtro').value;
+                const ano = document.getElementById('ano_filtro').value;
+                pdf.save(`Dashboard_Desempenho_Vendedores_${mes}-${ano}.pdf`);
+                alert("PDF exportado com sucesso!");
+
+            } catch (error) {
+                console.error("Erro ao exportar PDF:", error);
+                alert("Ocorreu um erro ao exportar o PDF. Verifique o console para mais detalhes.");
+            } finally {
+                content.style.width = originalWidth; // Restaura a largura original
+            }
+        }
+    </script>
+{% endblock %}

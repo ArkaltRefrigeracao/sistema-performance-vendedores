@@ -1,0 +1,584 @@
+{% extends "base_performance.html" %}
+
+{% block title %}Dashboard de Desempenho dos Vendedores{% endblock %}
+{% block page_title %}Dashboard de Desempenho dos Vendedores{% endblock %}
+
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* Estilos específicos para o dashboard */
+        .content-section {
+            /* Os estilos gerais do content-section já estão em base_performance.html */
+            /* Aqui podemos adicionar apenas estilos específicos para este dashboard se necessário */
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: flex-end;
+            padding: 20px;
+            flex-wrap: wrap;
+            background-color: var(--cor-texto-claro);
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+        }
+
+        .filter-section .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--cor-secundaria);
+        }
+
+        .filter-section select,
+        .filter-section button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        .filter-section button {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+
+        .filter-section button:hover {
+            background-color: #152E47; /* Um tom um pouco mais escuro */
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+
+        .chart-card {
+            background-color: var(--cor-texto-claro);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .chart-card h3 {
+            color: var(--cor-primaria);
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .details-table-container {
+            margin-top: 25px;
+            background-color: var(--cor-texto-claro);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            overflow-x: auto; /* Para tabelas grandes em telas menores */
+            padding-bottom: 50px; /* Adiciona padding na parte inferior para o botão de exportar PDF */
+        }
+
+        .details-table-container h3 {
+            color: var(--cor-primaria);
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .details-table th,
+        .details-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .details-table th {
+            background-color: var(--cor-secundaria);
+            color: var(--cor-texto-claro);
+            font-weight: bold;
+        }
+
+        .details-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .details-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Loading Spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none; /* Hidden by default */
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid var(--cor-primaria); /* Blue */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message-display {
+            color: #d9534f; /* Default red for error */
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+        }
+        .message-display.no-data {
+            color: var(--cor-secundaria);
+            background-color: #e0e7ee;
+            border: 1px solid #cce5ff;
+        }
+
+        .export-pdf-button-container {
+            text-align: right;
+            padding: 20px;
+        }
+
+        .export-pdf-button {
+            background-color: #28a745; /* Green */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .export-pdf-button:hover {
+            background-color: #218838;
+        }
+
+    </style>
+
+    <div class="content-section">
+        <div class="filter-section">
+            <div class="form-group">
+                <label for="mes_filtro">Mês:</label>
+                <select id="mes_filtro" name="mes_filtro">
+                    {% set current_month = now.month if now else 1 %}
+                    {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == current_month %}selected{% endif %}>{{ ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][i-1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ano_filtro">Ano:</label>
+                <select id="ano_filtro" name="ano_filtro">
+                    {% set current_year = now.year if now else 2024 %}
+                    {% for i in range(current_year - 2, current_year + 3) %}
+                        <option value="{{ i }}" {% if i == current_year %}selected{% endif %}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="vendedor_filtro">Vendedor:</label>
+                <select id="vendedor_filtro" name="vendedor_filtro">
+                    <option value="all">Todos os Vendedores</option>
+                    {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button onclick="loadDashboardData()">Aplicar Filtro</button>
+        </div>
+
+        <div id="message-display" class="message-display"></div>
+
+        <div class="dashboard-grid">
+            <div class="chart-card">
+                <h3>Pontuação Total por Vendedor</h3>
+                <canvas id="overallPerformanceChart"></canvas>
+            </div>
+            <div class="chart-card" id="quesitoPerformanceCard" style="display: none;">
+                <h3>Desempenho por Quesito (Vendedor Selecionado)</h3>
+                <canvas id="quesitoPerformanceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="details-table-container" id="detailsTableContainer" style="display: none;">
+            <h3 id="detailsTableTitle">Detalhes dos Lançamentos Diários</h3>
+            <div class="export-pdf-button-container">
+                <button class="export-pdf-button" onclick="exportDashboardToPdf()">Exportar para PDF</button>
+            </div>
+            <table class="details-table" id="dailyDetailsTable">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Quesito</th>
+                        <th>Pontuação Aplicada</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="spinner-overlay" id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        let overallPerformanceChart;
+        let quesitoPerformanceChart;
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const messageDisplay = document.getElementById('message-display');
+        const detailsTableContainer = document.getElementById('detailsTableContainer');
+        const quesitoPerformanceCard = document.getElementById('quesitoPerformanceCard');
+
+        function showSpinner() {
+            loadingSpinner.style.display = 'flex';
+        }
+
+        function hideSpinner() {
+            loadingSpinner.style.display = 'none';
+        }
+
+        function displayMessage(message, type = 'error') {
+            messageDisplay.innerText = message;
+            messageDisplay.className = `message-display ${type}`;
+            messageDisplay.style.display = 'block';
+        }
+
+        function hideMessage() {
+            messageDisplay.style.display = 'none';
+        }
+
+        async function loadDashboardData() {
+            showSpinner();
+            hideMessage();
+            detailsTableContainer.style.display = 'none';
+            quesitoPerformanceCard.style.display = 'none';
+            clearCharts(); // Garante que os gráficos anteriores sejam destruídos
+
+            const mes = document.getElementById('mes_filtro').value;
+            const ano = document.getElementById('ano_filtro').value;
+            const vendedor_id = document.getElementById('vendedor_filtro').value;
+
+            try {
+                // Modificação da URL para a rota correta que retorna TUDO
+                const response = await fetch(`/performance/api/pontuacoes_mensais?mes=${mes}&ano=${ano}&vendedor_id=${vendedor_id}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    displayMessage(data.error || 'Erro desconhecido ao carregar dados do dashboard.');
+                    return;
+                }
+
+                // Renderizar o gráfico de Pontuação Total por Vendedor (sempre de barras)
+                if (data.overall_performance.labels.length > 0) {
+                    renderOverallPerformanceChart(data.overall_performance.labels, data.overall_performance.data);
+                } else {
+                    // Se não houver dados gerais, exibe mensagem "sem dados" e limpa o gráfico
+                    displayMessage('Não há dados de pontuação total para o período selecionado.', 'no-data');
+                    if (overallPerformanceChart) overallPerformanceChart.destroy();
+                }
+
+                // Renderizar o gráfico de Desempenho por Quesito APENAS se um vendedor específico for selecionado E houver dados de quesito
+                if (vendedor_id !== 'all' && data.quesito_performance.labels.length > 0) {
+                    quesitoPerformanceCard.style.display = 'block';
+                    renderQuesitoPerformanceChart(data.quesito_performance.labels, data.quesito_performance.data);
+                } else {
+                    quesitoPerformanceCard.style.display = 'none';
+                    if (quesitoPerformanceChart) quesitoPerformanceChart.destroy();
+                }
+                
+                // Carregar detalhes dos lançamentos diários se um vendedor específico for selecionado E houver dados de detalhes
+                if (vendedor_id !== 'all' && data.daily_details.detalhes.length > 0) {
+                    detailsTableContainer.style.display = 'block';
+                    renderDailyDetailsTable(data.daily_details.vendedor_nome, data.daily_details.detalhes);
+                } else {
+                    detailsTableContainer.style.display = 'none';
+                }
+
+                // Se nenhum dado for encontrado em NENHUMA seção, exibe a mensagem geral de "sem dados"
+                if (data.overall_performance.labels.length === 0 && data.quesito_performance.labels.length === 0 && data.daily_details.detalhes.length === 0) {
+                     displayMessage('Não há dados para o período e/ou vendedor selecionado.', 'no-data');
+                }
+
+
+            } catch (error) {
+                console.error("Erro ao carregar dados do dashboard:", error);
+                displayMessage("Erro ao carregar dados do dashboard. Por favor, tente novamente. (Verifique o console para detalhes)");
+            } finally {
+                hideSpinner();
+            }
+        }
+
+        function renderDailyDetailsTable(vendedorNome, detalhes) {
+            const detailsTableBody = document.querySelector('#dailyDetailsTable tbody');
+            detailsTableBody.innerHTML = ''; // Limpa a tabela
+
+            document.getElementById('detailsTableTitle').innerText = `Detalhes dos Lançamentos Diários para ${vendedorNome}`;
+
+            if (detalhes.length > 0) {
+                detalhes.forEach(item => {
+                    const row = detailsTableBody.insertRow();
+                    row.insertCell().innerText = item.data;
+                    row.insertCell().innerText = item.quesito;
+                    row.insertCell().innerText = item.pontuacao_aplicada;
+                    row.insertCell().innerText = item.observacao;
+                });
+            } else {
+                const row = detailsTableBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 4;
+                cell.innerText = 'Nenhum lançamento diário encontrado para este período.';
+                cell.style.textAlign = 'center';
+            }
+        }
+
+        function renderOverallPerformanceChart(labels, data) {
+            if (overallPerformanceChart) {
+                overallPerformanceChart.destroy();
+            }
+            const ctx = document.getElementById('overallPerformanceChart').getContext('2d');
+            overallPerformanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pontuação Total',
+                        data: data,
+                        backgroundColor: 'rgba(26, 58, 89, 0.8)',
+                        borderColor: 'rgba(26, 58, 89, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Pontuação'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Vendedor'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.y.toLocaleString();
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderQuesitoPerformanceChart(labels, data) {
+            if (quesitoPerformanceChart) {
+                quesitoPerformanceChart.destroy();
+            }
+            const ctx = document.getElementById('quesitoPerformanceChart').getContext('2d');
+            quesitoPerformanceChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pontuação por Quesito',
+                        data: data,
+                        backgroundColor: 'rgba(74, 108, 140, 0.5)',
+                        borderColor: 'rgba(74, 108, 140, 1)',
+                        borderWidth: 1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    elements: {
+                        line: {
+                            borderWidth: 3
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            pointLabels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.r.toLocaleString();
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function clearCharts() {
+            if (overallPerformanceChart) {
+                overallPerformanceChart.destroy();
+                overallPerformanceChart = null;
+            }
+            if (quesitoPerformanceChart) {
+                quesitoPerformanceChart.destroy();
+                quesitoPerformanceChart = null;
+            }
+            document.querySelector('#dailyDetailsTable tbody').innerHTML = ''; // Limpa a tabela também
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const currentMonth = document.getElementById('mes_filtro').value;
+            const currentYear = document.getElementById('ano_filtro').value;
+            if (!currentMonth) document.getElementById('mes_filtro').value = today.getMonth() + 1;
+            if (!currentYear) document.getElementById('ano_filtro').value = today.getFullYear();
+            loadDashboardData();
+        });
+
+        async function exportDashboardToPdf() {
+            const content = document.querySelector('.content-section');
+            const clonedContent = content.cloneNode(true);
+
+            const exportButtonContainer = clonedContent.querySelector('.export-pdf-button-container');
+            if (exportButtonContainer) {
+                exportButtonContainer.remove();
+            }
+
+            const spinnerClone = clonedContent.querySelector('.spinner-overlay');
+            if (spinnerClone) spinnerClone.style.display = 'none';
+            const messageClone = clonedContent.querySelector('#message-display'); // Use a nova div
+            if (messageClone) messageClone.style.display = 'none';
+
+            clonedContent.style.position = 'absolute';
+            clonedContent.style.left = '-9999px';
+            document.body.appendChild(clonedContent);
+
+
+            try {
+                const canvas = await html2canvas(clonedContent, {
+                    scale: 2,
+                    useCORS: true,
+                    windowWidth: document.documentElement.offsetWidth,
+                    windowHeight: document.documentElement.offsetHeight
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                const mes = document.getElementById('mes_filtro').value;
+                const ano = document.getElementById('ano_filtro').value;
+                pdf.save(`Dashboard_Desempenho_Vendedores_${mes}-${ano}.pdf`);
+                alert("PDF exportado com sucesso!");
+
+            } catch (error) {
+                console.error("Erro ao exportar PDF:", error);
+                alert("Ocorreu um erro ao exportar o PDF. Verifique o console para mais detalhes.");
+            } finally {
+                if (clonedContent.parentNode) {
+                    clonedContent.parentNode.removeChild(clonedContent);
+                }
+            }
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,17 @@
+# Banco de dados do SQLite
+*.db
+*.sqlite3
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Pasta de ambiente virtual (se você usar uma)
+venv/
+.venv/
+env/
+.env
+
+# Arquivos de IDEs (opcional, mas bom ter)
+.idea/
+.vscode/

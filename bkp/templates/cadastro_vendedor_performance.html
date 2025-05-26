@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Vendedor - Sistema de Desempenho</title>
+    <style>
+        /* Reutilizando as variáveis de cor do base_performance.html */
+        :root {
+            --cor-primaria: #1A3A59;
+            --cor-secundaria: #4A6C8C;
+            --cor-fundo: #F0F2F5;
+            --cor-texto-claro: #FFFFFF;
+            --cor-texto-escuro: #333333;
+            --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--cor-fundo);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .cadastro-container {
+            background-color: var(--cor-texto-claro);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .cadastro-container h2 {
+            color: var(--cor-primaria);
+            margin-bottom: 25px;
+            font-size: 2em;
+        }
+
+        .logo-cadastro {
+            max-width: 200px; /* Ajuste conforme necessário */
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: var(--sombra-card);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--cor-texto-escuro);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .btn-cadastro {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            width: 100%;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 10px; /* Espaço entre o último campo e o botão */
+        }
+
+        .btn-cadastro:hover {
+            background-color: var(--cor-secundaria);
+            transform: translateY(-2px);
+        }
+
+        .links-cadastro {
+            margin-top: 20px;
+            font-size: 0.95em;
+        }
+
+        .links-cadastro a {
+            color: var(--cor-primaria);
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .links-cadastro a:hover {
+            color: var(--cor-secundaria);
+            text-decoration: underline;
+        }
+
+        /* Mensagens Flash - Reutilizando estilos do login_performance.html */
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .flash-messages li {
+            padding: 12px 20px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .flash-messages .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-messages .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-messages .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+         @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='image_8435a9.png') }}" alt="Logo da Empresa" class="logo-cadastro">
+
+    <div class="cadastro-container">
+        <h2>Cadastrar Novo Vendedor</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('cadastro_vendedor_performance') }}" method="POST">
+            <div class="form-group">
+                <label for="nome">Nome de Usuário:</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+            <button type="submit" class="btn-cadastro">Cadastrar</button>
+        </form>
+        <div class="links-cadastro">
+            <p>Já tem uma conta? <a href="{{ url_for('login_performance') }}">Fazer Login</a></p>
+        </div>
+    </div>
+</body>
+</html>

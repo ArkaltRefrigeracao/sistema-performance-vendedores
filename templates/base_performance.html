@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Desempenho{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        /* Variáveis de Cores e Estilos baseadas no seu dashboard.html */
+        :root {
+            --cor-primaria: #1A3A59; /* Azul escuro principal */
+            --cor-secundaria: #4A6C8C; /* Azul médio */
+            --cor-fundo: #F0F2F5; /* Fundo cinza claro */
+            --cor-texto-claro: #FFFFFF;
+            --cor-texto-escuro: #333333;
+            --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --sombra-card-hover: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Uma fonte mais moderna */
+            margin: 0;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto-escuro);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar (Menu Lateral) */
+        .sidebar {
+            width: 200px; /* Largura da barra lateral */
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Empurra o logout para baixo */
+            flex-shrink: 0; /* Não permite que a sidebar encolha */
+            position: fixed; /* Fixa a sidebar */
+            height: 100vh; /* Ocupa a altura total da viewport */
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Garante que fique por cima */
+        }
+
+        .sidebar .logo {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 30px;
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar nav ul li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar nav ul li a {
+            color: var(--cor-texto-claro);
+            text-decoration: none;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .sidebar nav ul li a .icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .sidebar nav ul li a:hover,
+        .sidebar nav ul li a.active {
+            background-color: var(--cor-secundaria); /* Um tom mais claro de azul no hover/ativo */
+            color: var(--cor-texto-claro);
+        }
+
+        .user-logout-section {
+            margin-top: auto; /* Empurra esta seção para a parte inferior */
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .user-logout-section p {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .user-logout-section a {
+            color: var(--cor-texto-claro);
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .user-logout-section a:hover {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .user-logout-section a .fas {
+            margin-left: 8px;
+        }
+
+        /* Conteúdo Principal */
+        .main-content {
+            flex-grow: 1; /* Ocupa o restante do espaço horizontal */
+            padding: 0;
+            margin-left: 200px; /* Deixa espaço para a sidebar fixa */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header-content {
+            background-color: var(--cor-texto-claro);
+            padding: 20px 30px; /* Adiciona padding à esquerda e direita */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-content h1 {
+            color: var(--cor-primaria);
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .header-content .user-info {
+            font-size: 1em;
+            color: var(--cor-secundaria);
+            margin-left: 20px;
+        }
+
+        .flash-messages {
+            list-style: none;
+            padding: 15px 20px;
+            margin: 20px auto; /* Centraliza as mensagens flash */
+            max-width: 1200px; /* Mesma largura máxima do content-section */
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .flash-messages li {
+            margin-bottom: 5px;
+        }
+
+        .flash-messages .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+        }
+
+        .flash-messages .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+        }
+
+        .flash-messages .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+        }
+
+        .flash-messages .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 10px;
+        }
+
+        /* Estilos genéricos para formulários e cards */
+        .content-section {
+            padding: 20px;
+            flex-grow: 1;
+            box-sizing: border-box;
+            max-width: 1200px; /* Limita a largura máxima */
+            margin: 20px auto; /* Centraliza o conteúdo e adiciona margem vertical */
+            background-color: transparent; /* Remove o fundo aqui, será tratado pelos cards */
+        }
+
+        .card {
+            background-color: var(--cor-texto-claro);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--sombra-card);
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--cor-secundaria);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group input[type="number"],
+        .form-group input[type="datetime-local"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #162E45;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: var(--cor-texto-claro);
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+            border: none;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th,
+        table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        table th {
+            background-color: var(--cor-fundo); /* Fundo sutil para o cabeçalho da tabela */
+            color: var(--cor-secundaria);
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        table tbody tr:hover {
+            background-color: #f5f5f5; /* Um cinza mais claro no hover */
+        }
+
+        table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .table-actions .btn {
+            padding: 8px 12px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <img src="{{ url_for('static', filename='image_8435a9.png') }}" alt="Logo da Empresa" class="logo">
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('performance_bp.dashboard_performance') }}" class="{% if request.endpoint == 'performance_bp.dashboard_performance' %}active{% endif %}"><i class="fas fa-chart-line icon"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('performance_bp.lancamento_diario_performance') }}" class="{% if request.endpoint == 'performance_bp.lancamento_diario_performance' %}active{% endif %}"><i class="fas fa-edit icon"></i> Lançamento Diário</a></li>
+                {% if session.get('usuario_nome') == 'GerenteVendas' %}
+                    <li><a href="{{ url_for('performance_bp.config_performance') }}" class="{% if request.endpoint == 'performance_bp.config_performance' %}active{% endif %}"><i class="fas fa-cogs icon"></i> Configurar Quesitos</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="user-logout-section">
+            {% if session.get('usuario_nome') %}
+                <p>Olá, {{ session['usuario_nome'] }}!</p>
+                <a href="{{ url_for('performance_bp.logout_performance') }}">Sair <i class="fas fa-sign-out-alt"></i></a>
+            {% else %}
+                <a href="{{ url_for('performance_bp.login_performance') }}">Login <i class="fas fa-sign-in-alt"></i></a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="main-content">
+        <header class="header-content">
+            <h1>{% block page_title %}{% endblock %}</h1>
+            {% if session.get('usuario_nome') %}
+                <span class="user-info">Usuário Logado: <strong>{{ session['usuario_nome'] }}</strong></span>
+            {% endif %}
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>
